@@ -3,11 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.UIElements;
 
 public class CharacterControl : MonoBehaviour
 {
     private CharacterController _charCtrl;
     private const float ForwardSpeed = 5f;
+    private const float RotationSpeed = 180f;
     private const float SidewaySpeed = 3f;
     private const float SprintSpeed = 1.2f;
     private const float JumpSpeed = 5f;
@@ -19,18 +21,22 @@ public class CharacterControl : MonoBehaviour
         Assert.IsNotNull(_charCtrl, name + " has no character controller!");
     }
     
-    private void Start()
-    {
-        
-    }
-    
     private void Update()
     {
-        UpdateVelocity();
-        UpdateSprint();
-        UpdateJump();
+        
+        ArrowMovement();
+        Sprint();
+        Jump();
         ApplyGravity();
         _charCtrl.Move(_velocity);
+        MouseMouvement();
+    }
+
+    private void MouseMouvement()
+    {
+        float horizontal = Input.GetAxis("Mouse X");
+        transform.Rotate(0f, horizontal*RotationSpeed*Time.deltaTime, 0f);
+        float vertical = Input.GetAxis("Mouse Y");
     }
 
     private void ApplyGravity()
@@ -39,28 +45,29 @@ public class CharacterControl : MonoBehaviour
             _velocity += Physics.gravity*Time.deltaTime;
     }
 
-    private void UpdateSprint()
+    private void Sprint()
     {
         if (Input.GetKey(KeyCode.LeftShift))
             _velocity *= SprintSpeed;
     }
 
-    private void UpdateJump()
+    private void Jump()
     {
         if (Input.GetKey(KeyCode.Space))
         {
-            _velocity += Vector3.up * JumpSpeed * Time.deltaTime;
+            _velocity += Vector3.up * (JumpSpeed * Time.deltaTime);
         }
     }
 
-    private void UpdateVelocity()
+    private void ArrowMovement()
     {
         float sideway = Input.GetAxis("Horizontal");
         float forwardOrBackward = Input.GetAxis("Vertical");
-        
+
+        var selfTransform = transform;
         _velocity = (
-            transform.forward * forwardOrBackward * ForwardSpeed * Time.deltaTime+
-            transform.right * sideway * SidewaySpeed * Time.deltaTime
+            selfTransform.forward * (forwardOrBackward * ForwardSpeed * Time.deltaTime)+
+            selfTransform.right * (sideway * SidewaySpeed * Time.deltaTime)
             );
     }
 
