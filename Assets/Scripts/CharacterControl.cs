@@ -12,7 +12,9 @@ public class CharacterControl : MonoBehaviour
     private const float RotationSpeed = 180f;
     private const float SidewaySpeed = 3f;
     private const float SprintSpeed = 1.2f;
-    private const float JumpSpeed = 5f;
+    private const float JumpSpeed = 1.2f;
+    [SerializeField]
+    private float JumpHeight = 5f;
     private Vector3 _velocity;
 
     private void Awake()
@@ -29,10 +31,10 @@ public class CharacterControl : MonoBehaviour
         Jump();
         ApplyGravity();
         _charCtrl.Move(_velocity);
-        MouseMouvement();
+        MouseMovement();
     }
 
-    private void MouseMouvement()
+    private void MouseMovement()
     {
         float horizontal = Input.GetAxis("Mouse X");
         transform.Rotate(0f, horizontal*RotationSpeed*Time.deltaTime, 0f);
@@ -41,7 +43,7 @@ public class CharacterControl : MonoBehaviour
 
     private void ApplyGravity()
     {
-        if (!_charCtrl.isGrounded && !Input.GetKey(KeyCode.Space))
+        if (!_charCtrl.isGrounded)
             _velocity += Physics.gravity*Time.deltaTime;
     }
 
@@ -53,21 +55,18 @@ public class CharacterControl : MonoBehaviour
 
     private void Jump()
     {
-        if (Input.GetKey(KeyCode.Space))
-        {
-            _velocity += Vector3.up * (JumpSpeed * Time.deltaTime);
+        if (Input.GetKey(KeyCode.Space) && _charCtrl.isGrounded)
+        { // TODO: check if jump is straight up or depends on the floors angle (aka characters transform up) 
+            _velocity.y += JumpHeight * Time.deltaTime;
         }
     }
 
     private void ArrowMovement()
     {
-        float sideway = Input.GetAxis("Horizontal");
-        float forwardOrBackward = Input.GetAxis("Vertical");
-
         var selfTransform = transform;
         _velocity = (
-            selfTransform.forward * (forwardOrBackward * ForwardSpeed * Time.deltaTime)+
-            selfTransform.right * (sideway * SidewaySpeed * Time.deltaTime)
+            selfTransform.forward * (Input.GetAxis("Vertical") * ForwardSpeed * Time.deltaTime)+
+            selfTransform.right * (Input.GetAxis("Horizontal") * SidewaySpeed * Time.deltaTime)
             );
     }
 
