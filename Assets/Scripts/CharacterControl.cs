@@ -8,13 +8,25 @@ using UnityEngine.UIElements;
 public class CharacterControl : MonoBehaviour
 {
     private CharacterController _charCtrl;
-    private const float ForwardSpeed = 5f;
+    
+    private bool _freeRunning = true;
+    private const float Acceleration = 5f;
     private const float RotationSpeed = 180f;
-    private const float SidewaySpeed = 3f;
-    private const float SprintSpeed = 1.2f;
-    private const float JumpSpeed = 1.2f;
-    [SerializeField]
-    private float JumpHeight = 5f;
+
+    private Vector3 _inCombatAccelerations = new Vector3(3f, 0f, 5f);
+    // private const float ForwardAcceleration = 5f;
+    // private const float SideWayAcceleration = 3f;
+    
+    private const float SprintSpeedUp = 1.2f;
+    private bool _sprint = false;
+    
+    private const float DragOnGround = 10f;
+    
+    private const float JumpHeight = 3f;
+    private Vector3 _jumpForce;
+    private bool _jump = false;
+
+    private Vector3 _inputVector;
     private Vector3 _velocity;
 
     private void Awake()
@@ -22,56 +34,102 @@ public class CharacterControl : MonoBehaviour
         _charCtrl = GetComponent<CharacterController>();
         Assert.IsNotNull(_charCtrl, name + " has no character controller!");
     }
-    
+
+    private void Start()
+    {
+        _jumpForce = -Physics.gravity.normalized * Mathf.Sqrt(2 * Physics.gravity.magnitude * JumpHeight);
+    }
+
     private void Update()
     {
-        
-        ArrowMovement();
-        Sprint();
-        Jump();
-        ApplyGravity();
-        _charCtrl.Move(_velocity);
-        MouseMovement();
+        _inputVector.x = Input.GetAxis("Horizontal");
+        _inputVector.z = Input.GetAxis("Vertical");
+
+        if (Input.GetButtonDown("Jump"))
+        {
+            _jump = true;
+        }
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            _sprint = true;
+        }
     }
+
+    private void FixedUpdate()
+    {
+        ApplyGravity();
+        ApplyMovement();
+        ApplyGroundDrag();
+        ApplySpeedLimitation();
+        ApplyJump();
+        MouseMovement();
+        _charCtrl.Move(_velocity * Time.deltaTime);
+    }
+
+    private void ApplySpeedLimitation()
+    {
+        float tempY = _velocity.y;
+        _velocity.y = 0;
+        if (_freeRunning)
+            _velocity = Vector3.ClampMagnitude(_velocity, MaxRunningSpeed);
+        else
+        {
+            _velocity.z = Mathf.Clamp(_velocity.z, 0f, MaxForwardRunningSpeed);
+            _velocity.x = Mathf.Clamp(_velocity.x, 0, MaxSideWayRunningSpeed);
+        }
+
+        _velocity.y = tempY;
+    }
+
+    private const float MaxRunningSpeed = (30.0f * 1000) / (60 * 60); // km/h
+    private const float MaxForwardRunningSpeed = (30.0f * 1000) / (60 * 60); // km/h
+    private const float MaxSideWayRunningSpeed = (20.0f * 1000) / (60 * 60); // km/h
 
     private void MouseMovement()
     {
         float horizontal = Input.GetAxis("Mouse X");
         transform.Rotate(0f, horizontal*RotationSpeed*Time.deltaTime, 0f);
-        float vertical = Input.GetAxis("Mouse Y");
     }
 
-    private void ApplyGravity()
+    private void ApplyGroundDrag()
     {
-        if (!_charCtrl.isGrounded)
-            _velocity += Physics.gravity*Time.deltaTime;
-    }
-
-    private void Sprint()
-    {
-        if (Input.GetKey(KeyCode.LeftShift))
-            _velocity *= SprintSpeed;
-    }
-
-    private void Jump()
-    {
-        if (Input.GetKey(KeyCode.Space) && _charCtrl.isGrounded)
-        { // TODO: check if jump is straight up or depends on the floors angle (aka characters transform up) 
-            _velocity.y += JumpHeight * Time.deltaTime;
+        if (_charCtrl.isGrounded)
+        {
+            _velocity *= 1 - Time.deltaTime * DragOnGround;
         }
     }
-
-    private void ArrowMovement()
+    private void ApplyGravity()
     {
-        var selfTransform = transform;
-        _velocity = (
-            selfTransform.forward * (Input.GetAxis("Vertical") * ForwardSpeed * Time.deltaTime)+
-            selfTransform.right * (Input.GetAxis("Horizontal") * SidewaySpeed * Time.deltaTime)
-            );
+        // Todo: ask if there is a need to do something when grounded in the gravity function
+        if (!_charCtrl.isGrounded)
+            _velocity += Physics.gravity * Time.deltaTime;
     }
 
-    private bool NotZero(float value)
+    private void ApplyJump()
     {
-        return Mathf.Approximately(value, 0f);
+        if (_jump && _charCtrl.isGrounded)
+        { // TODO: check if jump is straight up or depends on the floors angle (aka characters transform up) 
+            _velocity += _jumpForce;
+        }
+
+        _jump = false;
+    }
+
+    private void ApplyMovement()
+    {
+        
+        if (_sprint) // Apply sprint
+            _inputVector *= SprintSpeedUp;
+        
+        // Todo: change the rotation to the cameras rotation since movement directions...
+        // ...depend only on the cameras rotation
+        Vector3 v = _charCtrl.transform.rotation * _inputVector;
+        
+        if (_freeRunning) // Running when out off combat depends on the direction of the movement keys
+            _velocity += v * Acceleration;
+        else // In combat the character always faces forward 
+            _velocity += Vector3.Scale(v, _inCombatAccelerations);
+
+        _sprint = false;
     }
 }
