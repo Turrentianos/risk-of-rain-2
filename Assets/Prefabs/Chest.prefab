@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1489065249661093024}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: ChestLidRotation
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -43,7 +43,8 @@ GameObject:
   - component: {fileID: 7369993462566495685}
   - component: {fileID: 8635854781342373675}
   - component: {fileID: 6921951126712983593}
-  m_Layer: 0
+  - component: {fileID: 4288335853034909736}
+  m_Layer: 6
   m_Name: Chest
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -127,6 +128,20 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &4288335853034909736
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3243128983720041945}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8b09315e758983118b089d5e719c133, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemOrb: {fileID: 6065068964597100498, guid: 530cb1d8a55c272098c676b624651408, type: 3}
+  chestLid: {fileID: 1489065249661093024}
 --- !u!1 &8722935340107390959
 GameObject:
   m_ObjectHideFlags: 0
@@ -140,7 +155,7 @@ GameObject:
   - component: {fileID: 7975895208707642821}
   - component: {fileID: 348607553287664560}
   m_Layer: 0
-  m_Name: Cube (1)
+  m_Name: ChestLid
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
