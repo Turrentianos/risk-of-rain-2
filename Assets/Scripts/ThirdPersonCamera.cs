@@ -18,7 +18,7 @@ public class ThirdPersonCamera : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         transform.position = chrctl.transform.position;
         float horizontal = Input.GetAxis("Mouse X");

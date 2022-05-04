@@ -8,6 +8,8 @@ using UnityEngine.UIElements;
 public class CharacterControl : MonoBehaviour
 {
     private CharacterController _charCtrl;
+    [SerializeField]
+    private Transform cameraOrientation;
     
     private bool _freeRunning = true;
     private const float Acceleration = 5f;
@@ -21,6 +23,8 @@ public class CharacterControl : MonoBehaviour
     private bool _sprint = false;
     
     private const float DragOnGround = 10f;
+
+    private const float OpeningRadius = 1.5f;
     
     private const float JumpHeight = 3f;
     private Vector3 _jumpForce;
@@ -29,6 +33,8 @@ public class CharacterControl : MonoBehaviour
     private Vector3 _inputVector;
     private Vector3 _velocity;
 
+    private bool _openRequest = false;
+    private int _closedContainersLayerMask;
     private void Awake()
     {
         _charCtrl = GetComponent<CharacterController>();
@@ -38,6 +44,7 @@ public class CharacterControl : MonoBehaviour
     private void Start()
     {
         _jumpForce = -Physics.gravity.normalized * Mathf.Sqrt(2 * Physics.gravity.magnitude * JumpHeight);
+        _closedContainersLayerMask = LayerMask.GetMask("ClosedContainers");
     }
 
     private void Update()
@@ -49,9 +56,15 @@ public class CharacterControl : MonoBehaviour
         {
             _jump = true;
         }
+        
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
             _sprint = true;
+        }
+
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            _openRequest = true;
         }
     }
 
@@ -64,6 +77,30 @@ public class CharacterControl : MonoBehaviour
         ApplyJump();
         MouseMovement();
         _charCtrl.Move(_velocity * Time.deltaTime);
+        CheckForContainers();
+    }
+
+    private void CheckForContainers()
+    {
+        Collider[] colliders = Physics.OverlapSphere(transform.position, OpeningRadius, _closedContainersLayerMask);
+        if (colliders.Length != 0 && _openRequest)
+        {
+            float minDistance = Mathf.Infinity;
+            float distance;
+            int closest = -1;
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                distance = Vector3.Distance(colliders[i].transform.position, transform.position);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closest = i;
+                }
+            }
+            colliders[closest].gameObject.GetComponent<Chest>().enabled = true;
+        }
+
+        _openRequest = false;
     }
 
     private void ApplySpeedLimitation()
@@ -87,8 +124,9 @@ public class CharacterControl : MonoBehaviour
 
     private void MouseMovement()
     {
-        float horizontal = Input.GetAxis("Mouse X");
-        transform.Rotate(0f, horizontal*RotationSpeed*Time.deltaTime, 0f);
+        // float horizontal = Input.GetAxis("Mouse X");
+        // transform.Rotate(0f, horizontal*RotationSpeed*Time.deltaTime, 0f);
+        transform.rotation = cameraOrientation.rotation;
     }
 
     private void ApplyGroundDrag()
