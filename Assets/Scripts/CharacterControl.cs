@@ -1,9 +1,5 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.UIElements;
 
 public class CharacterControl : MonoBehaviour
 {
@@ -28,6 +24,7 @@ public class CharacterControl : MonoBehaviour
     
     private const float JumpHeight = 3f;
     private Vector3 _jumpForce;
+    private Vector3 _jumpDirection;
     private bool _jump = false;
 
     private Vector3 _inputVector;
@@ -55,6 +52,7 @@ public class CharacterControl : MonoBehaviour
         if (Input.GetButtonDown("Jump"))
         {
             _jump = true;
+            _jumpDirection = _charCtrl.transform.forward;
         }
         
         if (Input.GetKeyDown(KeyCode.LeftShift))
@@ -77,7 +75,18 @@ public class CharacterControl : MonoBehaviour
         ApplyJump();
         MouseMovement();
         _charCtrl.Move(_velocity * Time.deltaTime);
-        CheckForContainers();
+        CheckForObjectInTheArea();
+    }
+
+    private void CheckForObjectInTheArea()
+    {
+        if (CheckForPickUp())
+            CheckForContainers();
+    }
+
+    private bool CheckForPickUp()
+    {
+        return true;
     }
 
     private void CheckForContainers()
@@ -103,6 +112,10 @@ public class CharacterControl : MonoBehaviour
         _openRequest = false;
     }
 
+    private const float MaxRunningSpeed = (25.0f * 1000) / (60 * 60); // km/h
+    private const float MaxForwardRunningSpeed = (25.0f * 1000) / (60 * 60); // km/h
+    private const float MaxSideWayRunningSpeed = (20.0f * 1000) / (60 * 60); // km/h
+
     private void ApplySpeedLimitation()
     {
         float tempY = _velocity.y;
@@ -117,10 +130,6 @@ public class CharacterControl : MonoBehaviour
 
         _velocity.y = tempY;
     }
-
-    private const float MaxRunningSpeed = (30.0f * 1000) / (60 * 60); // km/h
-    private const float MaxForwardRunningSpeed = (30.0f * 1000) / (60 * 60); // km/h
-    private const float MaxSideWayRunningSpeed = (20.0f * 1000) / (60 * 60); // km/h
 
     private void MouseMovement()
     {
@@ -155,19 +164,20 @@ public class CharacterControl : MonoBehaviour
 
     private void ApplyMovement()
     {
+        if (_charCtrl.isGrounded) // Character cannot change direction if he has already jumped
+        {
+            if (_sprint) // Apply sprint
+                _inputVector *= SprintSpeedUp;
         
-        if (_sprint) // Apply sprint
-            _inputVector *= SprintSpeedUp;
-        
-        // Todo: change the rotation to the cameras rotation since movement directions...
-        // ...depend only on the cameras rotation
-        Vector3 v = _charCtrl.transform.rotation * _inputVector;
-        
-        if (_freeRunning) // Running when out off combat depends on the direction of the movement keys
-            _velocity += v * Acceleration;
-        else // In combat the character always faces forward 
-            _velocity += Vector3.Scale(v, _inCombatAccelerations);
+            // Todo: change the rotation to the cameras rotation since movement directions...
+            // ...depend only on the cameras rotation
+            Vector3 v = _charCtrl.transform.rotation * _inputVector;
+            if (_freeRunning) // Running when out off combat depends on the direction of the movement keys
+                _velocity += v * Acceleration;
+            else // In combat the character always faces forward 
+                _velocity += Vector3.Scale(v, _inCombatAccelerations);
 
-        _sprint = false;
+            _sprint = false;
+        }
     }
 }
