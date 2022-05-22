@@ -11,13 +11,14 @@ public class Chest : MonoBehaviour
 
     private const float ClosedAngle = 0f;
     private const float OpenAngle = 55f;
-    
+    private LayerMask _mask;
     private float _timer = 0f;
     private float _time = 0.5f;
 
     private void Start()
     {
         enabled = false;
+        _mask = LayerMask.NameToLayer("OpenContainers");
     }
 
     private void Update()
@@ -29,7 +30,7 @@ public class Chest : MonoBehaviour
         if (_timer > _time)
         {
             enabled = false;
-            gameObject.layer = LayerMask.NameToLayer("OpenContainers");
+            gameObject.layer = _mask;
             GameObject createdItemOrb = Instantiate(itemOrb, transform.position, transform.rotation);
             createdItemOrb.transform.Rotate(0, 90, 0);
         }

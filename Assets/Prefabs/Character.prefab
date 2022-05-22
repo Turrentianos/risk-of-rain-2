@@ -109,6 +109,7 @@ GameObject:
   - component: {fileID: 2756220377490924969}
   - component: {fileID: 2756220377490924970}
   - component: {fileID: 2756220377490924973}
+  - component: {fileID: 1295232122}
   m_Layer: 0
   m_Name: Character
   m_TagString: Untagged
@@ -161,7 +162,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 0c904608337be0afcb4436871f8d662f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -227,6 +228,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a05c50af85b2fb142ab2fa58cde179bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cameraOrientation: {fileID: 0}
+  _abilityController: {fileID: 1295232122}
+--- !u!114 &1295232122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2756220377490924971}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceedf05d92307a637b5901fa35af466d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _bulletTrail: {fileID: 8949238810147376672, guid: 38267ac0fba184d50a81eb4c170204ad, type: 3}
+  _initialBulletTransform: {fileID: 1276021031465310543}
+  _ammoImages:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  _ammoCount: {fileID: 0}
+  defensiveAbilityEffect: {fileID: 1914788268520935882, guid: 4c7601141d49bc9b3ac4dc304fd8c3d9, type: 3}
+  _invisibleCooldownText: {fileID: 0}
+  _character: {fileID: 2100000, guid: 0c904608337be0afcb4436871f8d662f, type: 2}
+  _invisibleColor: {r: 1, g: 1, b: 1, a: 0.22745098}
+  _visibleColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &2756220378404546702
 GameObject:
   m_ObjectHideFlags: 0

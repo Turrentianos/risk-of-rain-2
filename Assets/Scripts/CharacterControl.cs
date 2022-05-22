@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -8,14 +9,17 @@ public class CharacterControl : MonoBehaviour
     private Transform cameraOrientation;
     
     private bool _freeRunning = true;
+    private const float TimeToGoOutOfCombat = 0.5f;
+    private float _lastAction;
+    private bool _outOfCombat = true;
     private const float Acceleration = 5f;
     private const float RotationSpeed = 180f;
 
-    private Vector3 _inCombatAccelerations = new Vector3(3f, 0f, 5f);
+    private readonly Vector3 _inCombatAccelerations = new Vector3(3f, 0f, 5f);
     // private const float ForwardAcceleration = 5f;
     // private const float SideWayAcceleration = 3f;
     
-    private const float SprintSpeedUp = 1.2f;
+    private const float SprintSpeedUp = 2f;
     private bool _sprint = false;
     
     private const float DragOnGround = 10f;
@@ -24,7 +28,6 @@ public class CharacterControl : MonoBehaviour
     
     private const float JumpHeight = 3f;
     private Vector3 _jumpForce;
-    private Vector3 _jumpDirection;
     private bool _jump = false;
 
     private Vector3 _inputVector;
@@ -32,14 +35,21 @@ public class CharacterControl : MonoBehaviour
 
     private bool _openRequest = false;
     private int _closedContainersLayerMask;
-    private void Awake()
-    {
-        _charCtrl = GetComponent<CharacterController>();
-        Assert.IsNotNull(_charCtrl, name + " has no character controller!");
-    }
+    
+    private bool _mouse0 = false;
+    private bool _mouse2 = false;
+    private bool _defensiveAbility = false;
+    private bool _ultimate = false;
+    private Vector3 _lookDirection;
+    [SerializeField]
+    private BanditAbilityController _abilityController;
 
+    private Camera _camera;
     private void Start()
     {
+        _camera = Camera.main;
+        _charCtrl = GetComponent<CharacterController>();
+        Assert.IsNotNull(_charCtrl, name + " has no character controller!");
         _jumpForce = -Physics.gravity.normalized * Mathf.Sqrt(2 * Physics.gravity.magnitude * JumpHeight);
         _closedContainersLayerMask = LayerMask.GetMask("ClosedContainers");
     }
@@ -48,22 +58,25 @@ public class CharacterControl : MonoBehaviour
     {
         _inputVector.x = Input.GetAxis("Horizontal");
         _inputVector.z = Input.GetAxis("Vertical");
-
-        if (Input.GetButtonDown("Jump"))
-        {
-            _jump = true;
-            _jumpDirection = _charCtrl.transform.forward;
-        }
         
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        // Use or operator to not set to false if a value is true (aka fixedUpdate has not been called yet) 
+        _jump |= Input.GetButtonDown("Jump");
+        _sprint = Input.GetKey(KeyCode.LeftShift);
+        _openRequest |= Input.GetKeyDown(KeyCode.E);
+        _mouse0 |= Input.GetKeyDown(KeyCode.Mouse0); // Left mouse click
+        _mouse2 |= Input.GetKeyDown(KeyCode.Mouse1); // Right mouse click
+        _ultimate |= Input.GetKeyDown(KeyCode.R);
+        _defensiveAbility |= Input.GetKeyDown(KeyCode.LeftControl);
+        
+        if (_mouse0 | _mouse2 | _ultimate | _defensiveAbility)
         {
-            _sprint = true;
-        }
-
-        if (Input.GetKeyDown(KeyCode.E))
+            _outOfCombat = false;
+            _lastAction = Time.time;
+        } else if (!_outOfCombat && Time.time - _lastAction > TimeToGoOutOfCombat)
         {
-            _openRequest = true;
+            _outOfCombat = true;
         }
+        SetCameraFieldOfView();
     }
 
     private void FixedUpdate()
@@ -74,19 +87,36 @@ public class CharacterControl : MonoBehaviour
         ApplySpeedLimitation();
         ApplyJump();
         MouseMovement();
+        CallAbilities();
         _charCtrl.Move(_velocity * Time.deltaTime);
-        CheckForObjectInTheArea();
+        CheckForContainers();
     }
 
-    private void CheckForObjectInTheArea()
+    private void CallAbilities()
     {
-        if (CheckForPickUp())
-            CheckForContainers();
-    }
+        if (_mouse0)
+        {
+            _abilityController.Mouse0();
+            _mouse0 = false;
+        }
+        
+        if (_mouse2)
+        {
+            _abilityController.Mouse2();
+            _mouse2 = false;
+        }
 
-    private bool CheckForPickUp()
-    {
-        return true;
+        if (_ultimate)
+        {
+            _abilityController.Ultimate();
+            _ultimate = false;
+        }
+        
+        if (_defensiveAbility)
+        {
+            _abilityController.DefensiveAbility();
+            _defensiveAbility = false;
+        }
     }
 
     private void CheckForContainers()
@@ -159,16 +189,48 @@ public class CharacterControl : MonoBehaviour
             _velocity += _jumpForce;
         }
 
+        if (_abilityController.InvisibleChange)
+        {
+            _velocity.y = _abilityController.InvisibilityBump.y;
+            _abilityController.InvisibleChange = false;
+        }
         _jump = false;
     }
 
+    private const float SprintFieldOfView = 60f;
+    private const float NormalFieldOfView = 45f;
+    private bool _transitioning;
+    private void SetCameraFieldOfView()
+    {
+        float newFov = _sprint ? SprintFieldOfView : NormalFieldOfView;
+        
+        if (!_transitioning && !Mathf.Approximately(newFov, _camera.fieldOfView))
+            StartCoroutine(ChangeFieldOfView(_camera.fieldOfView, newFov, 0.5f));
+    }
+
+    private IEnumerator ChangeFieldOfView(float previousFov, float newFov, float duration)
+    {
+        _transitioning = true;
+        float time = 0;
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+            _camera.fieldOfView = Mathf.Lerp(previousFov, newFov, time / duration);
+            yield return null;
+        }
+
+        _camera.fieldOfView = newFov;
+        yield return new WaitForSeconds(0.5f);
+        _transitioning = false;
+    }
     private void ApplyMovement()
     {
         if (_charCtrl.isGrounded) // Character cannot change direction if he has already jumped
         {
             if (_sprint) // Apply sprint
+            {
                 _inputVector *= SprintSpeedUp;
-        
+            }
             // Todo: change the rotation to the cameras rotation since movement directions...
             // ...depend only on the cameras rotation
             Vector3 v = _charCtrl.transform.rotation * _inputVector;
@@ -176,8 +238,7 @@ public class CharacterControl : MonoBehaviour
                 _velocity += v * Acceleration;
             else // In combat the character always faces forward 
                 _velocity += Vector3.Scale(v, _inCombatAccelerations);
-
-            _sprint = false;
+            
         }
     }
 }
