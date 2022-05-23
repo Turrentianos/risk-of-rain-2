@@ -310,7 +310,7 @@ GameObject:
   - component: {fileID: 71355187}
   - component: {fileID: 71355186}
   m_Layer: 5
-  m_Name: Cooldown
+  m_Name: UltCooldown
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4775,6 +4775,10 @@ PrefabInstance:
       propertyPath: _ammoCount
       value: 
       objectReference: {fileID: 913286609}
+    - target: {fileID: 1295232122, guid: e428fcf69a16db9a79132c6f1bdd507b, type: 3}
+      propertyPath: _ultimateCooldownText
+      value: 
+      objectReference: {fileID: 71355186}
     - target: {fileID: 1295232122, guid: e428fcf69a16db9a79132c6f1bdd507b, type: 3}
       propertyPath: _invisibleCooldownText
       value: 
