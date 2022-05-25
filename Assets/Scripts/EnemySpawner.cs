@@ -48,15 +48,8 @@ public class EnemySpawner : MonoBehaviour
         for (int i = 0; i < MaxSpawnNumber; i++)
         {
             if (Random.value < IndividualSpawnProbability)
-                InstantiateEnemy();
+                Instantiate(_groundEnemy, RandomPosition(), RandomRotation());
         }
-    }
-
-    private void InstantiateEnemy()
-    {
-        GameObject createdEnemy = Instantiate(_groundEnemy, RandomPosition(), RandomRotation());
-        Enemy enemyScript = createdEnemy.GetComponent<Enemy>();
-        
     }
 
     private Quaternion RandomRotation()
