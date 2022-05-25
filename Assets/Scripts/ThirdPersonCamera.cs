@@ -1,4 +1,7 @@
 using UnityEngine;
+using Quaternion = UnityEngine.Quaternion;
+using Vector2 = UnityEngine.Vector2;
+using Vector3 = UnityEngine.Vector3;
 
 public class ThirdPersonCamera : MonoBehaviour
 {
@@ -30,8 +33,7 @@ public class ThirdPersonCamera : MonoBehaviour
     {
         get => -_camera.transform.localPosition.z;
     }
-
-// Start is called before the first frame update
+    
     void Start()
     {
         _camera = GetComponentInChildren<Camera>();
@@ -39,7 +41,6 @@ public class ThirdPersonCamera : MonoBehaviour
         _between = (_yLimits.x + _yLimits.y) / 2;
     }
 
-    // Update is called once per frame
     void LateUpdate()
     {
         SetCameraPosition();
@@ -53,30 +54,48 @@ public class ThirdPersonCamera : MonoBehaviour
 
     private void ReduceDistanceOnCollision()
     {
-        Quaternion lookRotation = Quaternion.Euler(cameraY.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, 0f);
-        Vector3 lookDirection = lookRotation * Vector3.forward;
         Vector3 focusPoint = transform.position;
-        if (Physics.Raycast(focusPoint, -lookDirection, out RaycastHit hitInfo, Distance))
-            transform.position = focusPoint - lookDirection * hitInfo.distance;
+        Vector3 lookDirection = (focusPoint - _camera.transform.position).normalized;
+        Vector3 cameraLocalPosition = _camera.transform.localPosition;
+        if (Physics.Raycast(focusPoint, -lookDirection, out RaycastHit hitInfo, Distance, LayerMask.GetMask("Ground")))
+            cameraLocalPosition.z = -hitInfo.distance;
+        _camera.transform.localPosition = cameraLocalPosition;
+    }
+
+    private void OnDrawGizmos()
+    {
+        Vector3 focusPoint = transform.position;
+        Vector3 lookDirection = (focusPoint - _camera.transform.position).normalized;
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(focusPoint, focusPoint+lookDirection);
+        
+        Quaternion lookRotation = _camera.transform.rotation;
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(focusPoint, focusPoint+lookRotation * Vector3.forward);
     }
 
     private void ClearNearPlane()
     {
-        Quaternion lookRotation = Quaternion.Euler(cameraY.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, 0f);
+        Quaternion lookRotation = _camera.transform.rotation;
         Vector3 lookDirection = lookRotation * Vector3.forward;
         Vector3 focusPoint = transform.position;
+        Vector3 cameraLocalPosition = _camera.transform.localPosition;
         if (Physics.BoxCast(
-                focusPoint, CameraHalfExtends, lookDirection,
+                focusPoint, CameraHalfExtends, -lookDirection,
                 out RaycastHit hitInfo, lookRotation, 
-                Distance - _camera.nearClipPlane))
+                Distance - _camera.nearClipPlane, LayerMask.GetMask("Ground")))
         {
-            transform.position = focusPoint - lookDirection * (hitInfo.distance + _camera.nearClipPlane);
+            cameraLocalPosition.z = -(hitInfo.distance + _camera.nearClipPlane);
         }
+        _camera.transform.localPosition = cameraLocalPosition;
     }
 
     private void SetCameraPosition()
     {
         transform.position = chrctl.transform.position;
+        Vector3 localPosition = _camera.transform.localPosition;
+        localPosition.z = -4;
+        _camera.transform.localPosition = localPosition;
     }
     private void InitialRotationCamera()
     {
