@@ -14,7 +14,6 @@ using Vector3 = UnityEngine.Vector3;
 public class EnemySpawner : MonoBehaviour
 {
     [SerializeField] private Transform _player;
-    [SerializeField] private BanditController _bandit;
     [SerializeField] private GameObject _groundEnemy;
     [SerializeField] private GameObject _lesserWisp;
 
