@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 public class CharacterControl : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class CharacterControl : MonoBehaviour
     private const float Acceleration = 5f;
     private const float RotationSpeed = 180f;
 
-    private readonly Vector3 _inCombatAccelerations = new Vector3(3f, 0f, 5f);
+    private readonly Vector3 _inCombatAccelerations = new Vector3(3f, 1f, 5f);
     // private const float ForwardAcceleration = 5f;
     // private const float SideWayAcceleration = 3f;
     
@@ -42,7 +43,7 @@ public class CharacterControl : MonoBehaviour
     private bool _ultimate = false;
     private Vector3 _lookDirection;
     [SerializeField]
-    private BanditAbilityController _abilityController;
+    private BanditController _banditController;
 
     private Camera _camera;
     private void Start()
@@ -96,25 +97,25 @@ public class CharacterControl : MonoBehaviour
     {
         if (_mouse0)
         {
-            _abilityController.Mouse0();
+            _banditController.Mouse0();
             _mouse0 = false;
         }
         
         if (_mouse2)
         {
-            _abilityController.Mouse2();
+            _banditController.Mouse2();
             _mouse2 = false;
         }
 
         if (_ultimate)
         {
-            _abilityController.Ultimate();
+            _banditController.Ultimate();
             _ultimate = false;
         }
         
         if (_defensiveAbility)
         {
-            _abilityController.DefensiveAbility();
+            _banditController.DefensiveAbility();
             _defensiveAbility = false;
         }
     }
@@ -189,10 +190,10 @@ public class CharacterControl : MonoBehaviour
             _velocity += _jumpForce;
         }
 
-        if (_abilityController.InvisibleChange)
+        if (_banditController.InvisibleChange)
         {
-            _velocity.y = _abilityController.InvisibilityBump.y;
-            _abilityController.InvisibleChange = false;
+            _velocity.y = _banditController.InvisibilityBump.y;
+            _banditController.InvisibleChange = false;
         }
         _jump = false;
     }

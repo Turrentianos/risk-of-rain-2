@@ -3,12 +3,13 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
 
-public class BanditAbilityController : MonoBehaviour
+public class BanditController : MonoBehaviour
 {
     
     private Camera _camera;
     private void Start()
     {
+        _hitMask = LayerMask.GetMask("Ground", "Enemy");
         // Compute maxDistance of a bullet
         _camera = Camera.main;
         Assert.IsNotNull(_camera, "No camera found in Bandit ability controller!!!");
@@ -20,6 +21,14 @@ public class BanditAbilityController : MonoBehaviour
         _invisibilityBump = -Physics.gravity.normalized * Mathf.Sqrt(2 * Physics.gravity.magnitude * KnockUpHeight);
     }
 
+    private int _hitMask;
+    private float _health = 110;
+    private float _damage = 12;
+    private float Damage()
+    {
+        return _damage;
+    }
+
     #region Shoot
     private const float ShootInterval = 0.25f;
     private float _lastShootTime;
@@ -29,11 +38,12 @@ public class BanditAbilityController : MonoBehaviour
     private float _maxDistance;
     private const float BulletSpeed = 100f;
     [SerializeField]
-    private TrailRenderer _bulletTrail;
+    private TrailRenderer _shotGunBulletTrail;
 
     [SerializeField]
     private Transform _initialBulletTransform;
-    
+
+    public readonly string ShotgunBulletTag = "ShotgunBullet";
     // Shotgun that shoots five pellets equally spread horizontally on the same height 
     public void Mouse0()
     {
@@ -46,12 +56,12 @@ public class BanditAbilityController : MonoBehaviour
                 Ray ray = bulletRays[i];
                 LayerMask mask = LayerMask.GetMask("Ground");
                 Vector3 hitPoint;
-                if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance, mask))
+                if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance, _hitMask))
                     hitPoint = hit.point;
                 else
                     hitPoint = ray.direction * _maxDistance;
                 TrailRenderer trail = Instantiate(
-                        _bulletTrail,
+                        _shotGunBulletTrail,
                         _initialBulletTransform.position,
                         _initialBulletTransform.rotation
                     );
@@ -129,14 +139,26 @@ public class BanditAbilityController : MonoBehaviour
         }
         return bulletRays;
     }
+
+    public float ShotgunDamage()
+    {
+        return Damage();
+    }
     #endregion
 
     #region Slash
+    
+    public readonly string SlashTag = "Slash";
     // Slash attack
     public void Mouse2()
     {
         _invisible = false;
         throw new System.NotImplementedException();
+    }
+
+    public float SlashDamage()
+    {
+        return Damage() * 3.6f;
     }
     #endregion
 
@@ -209,7 +231,8 @@ public class BanditAbilityController : MonoBehaviour
     // Shoot one pellet using revolver that resets all character cooldowns
 
     #region Ultimate
-
+    
+    public readonly string RevolverBulletTag = "RevolverBullet";
     private bool _reset = false;
     private const float UltimateCooldown = 4f;
     private float _lastUltimate = -UltimateCooldown;
@@ -232,23 +255,23 @@ public class BanditAbilityController : MonoBehaviour
     private const float RevolverAnimationTime = 0.35f;
     private const float RestingRevolverAngle = 0f;
     private const float AimingRevolverAngle = -90f;
+    [SerializeField]
+    private TrailRenderer _revolverBulletTrail;
     private IEnumerator AimRevolver()
     {
         yield return TurnRevolver(RestingRevolverAngle, AimingRevolverAngle);
         
         Ray ray = _camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, _camera.nearClipPlane));
-        LayerMask mask = LayerMask.GetMask("Ground");
         Vector3 hitPoint;
-        if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance, mask))
+        if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance, _hitMask))
             hitPoint = hit.point;
         else
             hitPoint = ray.direction * _maxDistance;
         TrailRenderer trail = Instantiate(
-            _bulletTrail,
+            _revolverBulletTrail,
             _initialRevolverTransform.position,
             _initialRevolverTransform.rotation
         );
-                
         StartCoroutine(SpawnTrail(trail, hitPoint));
 
         yield return TurnRevolver(AimingRevolverAngle, RestingRevolverAngle);
@@ -270,6 +293,11 @@ public class BanditAbilityController : MonoBehaviour
         revolverRotation = _revolver.rotation.eulerAngles;
         revolverRotation.x = Mathf.LerpAngle(start, end, 1);
         _revolver.rotation = Quaternion.Euler(revolverRotation);
+    }
+
+    public float RevolverDamage()
+    {
+        return Damage() * 6f;
     }
     #endregion
     

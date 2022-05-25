@@ -3,20 +3,23 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - ShotgunBullet
+  - RevolverBullet
+  - Blade
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Player
   - Water
   - UI
   - ClosedContainers
   - OpenContainers
   - Items
   - Ground
-  - 
-  - 
+  - Bullet
+  - Enemy
   - 
   - 
   - 

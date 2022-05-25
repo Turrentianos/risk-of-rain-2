@@ -5036,7 +5036,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraOrientation: {fileID: 0}
-  _abilityController: {fileID: 1295232122}
+  controller: {fileID: 1295232122}
 --- !u!114 &1295232122
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5049,7 +5049,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ceedf05d92307a637b5901fa35af466d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _bulletTrail: {fileID: 8949238810147376672, guid: 38267ac0fba184d50a81eb4c170204ad, type: 3}
+  _shotGunBulletTrail: {fileID: 8949238810147376672, guid: e976b2f85aa299dbc88b0c64f2c1b8f2, type: 3}
   _initialBulletTransform: {fileID: 1276021031465310543}
   _ammoImages:
   - {fileID: 0}
@@ -5065,6 +5065,7 @@ MonoBehaviour:
   _ultimateCooldownText: {fileID: 0}
   _revolver: {fileID: 5648515158340951044}
   _initialRevolverTransform: {fileID: 4733768983982554791}
+  _revolverBulletTrail: {fileID: 8949238810147376672, guid: 38267ac0fba184d50a81eb4c170204ad, type: 3}
 --- !u!1 &2756220378404546702
 GameObject:
   m_ObjectHideFlags: 0
@@ -5461,7 +5462,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &47792829901204644
 Transform:
   m_ObjectHideFlags: 0
