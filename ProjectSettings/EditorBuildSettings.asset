@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes: 
+  - enabled: 1
+    path: Assets/Scenes/RiskOfRain2.unity
+    guid: 982354f7610b1d08caa9e2c0822c14e0
   m_configObjects: {}

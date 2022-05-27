@@ -9,7 +9,7 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private Transform _player;
     [SerializeField] private GameObject _groundEnemy;
     [SerializeField] private GameObject _lesserWisp;
-
+    [SerializeField] private Transform _enemyParent;
     private const float SpawnTimer = 5f;
     private const float SpawnProbability = 0.7f;
     private const float MaxSpawnNumber = 8f;
@@ -40,7 +40,12 @@ public class EnemySpawner : MonoBehaviour
         for (int i = 0; i < MaxSpawnNumber; i++)
         {
             if (Random.value < IndividualSpawnProbability)
-                Instantiate(_groundEnemy, RandomPosition(), RandomRotation());
+            {
+                GameObject newEnemy = Instantiate(_groundEnemy, _enemyParent);
+                newEnemy.transform.position = RandomPosition();
+                newEnemy.transform.rotation = RandomRotation();
+            }
+                
         }
     }
 

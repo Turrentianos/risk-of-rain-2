@@ -1,29 +1,48 @@
+using System;
 using System.Collections;
+using System.Numerics;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Quaternion = UnityEngine.Quaternion;
+using Vector3 = UnityEngine.Vector3;
 
 public class BanditController : MonoBehaviour
 {
     
     private Camera _camera;
-    private void Start()
+    private void Awake()
     {
+        _sweepAnimator = GetComponentInChildren<Animator>();
         _hitMask = LayerMask.GetMask("Ground", "Enemy");
         // Compute maxDistance of a bullet
         _camera = Camera.main;
         Assert.IsNotNull(_camera, "No camera found in Bandit ability controller!!!");
-        _maxDistance = _camera.farClipPlane;
+        //_maxDistance = _camera.farClipPlane;
         _remainingBullets = 4;
         _ammoCount.text = _remainingBullets.ToString();
         _invisibleCooldownText.text = "";
+        _ultimateCooldownText.text = "";
+        _slashCooldownLabel.text = "";
         _character.color = _visibleColor;
         _invisibilityBump = -Physics.gravity.normalized * Mathf.Sqrt(2 * Physics.gravity.magnitude * KnockUpHeight);
     }
 
     private int _hitMask;
+    [SerializeField] private Text _healthLabel;
+    [SerializeField] private Slider _healthSlider;
     private float _health = 110;
+    private float _maxHealth = 110;
     private float _damage = 12;
+
+    private void Update()
+    {
+        _healthLabel.text = _health + "/" + _maxHealth;
+        _healthSlider.maxValue = _maxHealth;
+        _healthSlider.value = _health;
+    }
+
     private float Damage()
     {
         return _damage;
@@ -35,14 +54,16 @@ public class BanditController : MonoBehaviour
     private const float ReloadTime = 1.0f;
     private const int MagazineSize = 4;
     private int _remainingBullets = 4;
-    private float _maxDistance;
-    private const float BulletSpeed = 100f;
+    private float _maxDistance = 50f;
+    private const float BulletSpeed = 150f;
     [SerializeField]
     private TrailRenderer _shotGunBulletTrail;
 
     [SerializeField]
     private Transform _initialBulletTransform;
 
+    [SerializeField] private AudioClip _shotgunSound;
+    
     public readonly string ShotgunBulletTag = "ShotgunBullet";
     // Shotgun that shoots five pellets equally spread horizontally on the same height 
     public void Mouse0()
@@ -50,16 +71,18 @@ public class BanditController : MonoBehaviour
         if (Time.time - _lastShootTime > ShootInterval && _remainingBullets > 0)
         {
             _invisible = false;
+            AudioSource.PlayClipAtPoint(_shotgunSound, transform.position);
             Ray[] bulletRays = GetShotgunRays();
             for (int i = 0; i < bulletRays.Length; i++)
             {
-                Ray ray = bulletRays[i];
-                LayerMask mask = LayerMask.GetMask("Ground");
+                // Find collision from cameras point of view
+                Ray rayFromCamera = bulletRays[i];
                 Vector3 hitPoint;
-                if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance, _hitMask))
+                if (Physics.Raycast(rayFromCamera, out RaycastHit hit, _maxDistance, _hitMask))
                     hitPoint = hit.point;
                 else
-                    hitPoint = ray.direction * _maxDistance;
+                    hitPoint = transform.position + rayFromCamera.direction * _maxDistance;
+
                 TrailRenderer trail = Instantiate(
                         _shotGunBulletTrail,
                         _initialBulletTransform.position,
@@ -80,7 +103,8 @@ public class BanditController : MonoBehaviour
         float lastReload = 0f;
         while (_remainingBullets < MagazineSize)
         {
-            if (Time.time - _lastShootTime > ReloadTime && Time.time - lastReload > ReloadTime)
+            float reloadDelay = _lastShootTime < lastReload ? ReloadTime / 2f : ReloadTime;
+            if (Time.time - _lastShootTime > ReloadTime && Time.time - lastReload > reloadDelay)
             {
                 lastReload = Time.time;
                 LoadBullet();
@@ -110,17 +134,18 @@ public class BanditController : MonoBehaviour
     {
         float time = 0;
         Vector3 startPosition = trail.transform.position;
-        float totalTime = Vector3.Distance(startPosition, hitPoint)/BulletSpeed;
-        while (time < totalTime && time < maxTime)
+        float totalTime = Vector3.Distance(startPosition, hitPoint) / BulletSpeed;
+        while (trail && time < Mathf.Min(maxTime, totalTime))
         {
-            trail.transform.position = Vector3.Lerp(startPosition, hitPoint, time/totalTime);
+            trail.transform.position = Vector3.Lerp(startPosition, hitPoint, time / totalTime);
             time += Time.deltaTime;
-
             yield return null;
         }
-
-        trail.transform.position = hitPoint;
-        Destroy(trail.gameObject, trail.time);
+        
+        if (trail) {
+            trail.transform.position = hitPoint;
+            Destroy(trail.gameObject, trail.time);   
+        }
     }
 
     // Should return 5 directions, one for each bullet shot but the shotgun 
@@ -147,13 +172,25 @@ public class BanditController : MonoBehaviour
     #endregion
 
     #region Slash
-    
     public readonly string SlashTag = "Slash";
+
+    [SerializeField] private Text _slashCooldownLabel;
+    private static readonly int Sweep = Animator.StringToHash("Sweep");
+    private const float SlashCooldown = 4f;
+    private float _lastSlash;
+    private Animator _sweepAnimator; 
     // Slash attack
     public void Mouse2()
     {
-        _invisible = false;
-        throw new System.NotImplementedException();
+        if (Time.time - _lastSlash >= SlashCooldown)
+        {
+            _invisible = false;
+            _lastSlash = Time.time;
+            _sweepAnimator.SetTrigger(Sweep);
+            cooldownCoroutines[0] = CooldownTimer(_slashCooldownLabel, SlashCooldown);
+            StartCoroutine(cooldownCoroutines[0]);
+        }
+        
     }
 
     public float SlashDamage()
@@ -163,7 +200,6 @@ public class BanditController : MonoBehaviour
     #endregion
 
     #region Inivisibility
-
     private Vector3 _invisibilityBump;
     public Vector3 InvisibilityBump
     {
@@ -190,8 +226,8 @@ public class BanditController : MonoBehaviour
             Instantiate(defensiveAbilityEffect, transform.position, Quaternion.Euler(90f, 0, 0));
         
             StartCoroutine(ActivateInvisibility());
-        
-            StartCoroutine(CooldownTimer(_invisibleCooldownText, InvisibilityCooldown));
+            cooldownCoroutines[1] = CooldownTimer(_invisibleCooldownText, InvisibilityCooldown);
+            StartCoroutine(cooldownCoroutines[1]);
         }
     }
 
@@ -203,6 +239,8 @@ public class BanditController : MonoBehaviour
         set => _changeInvisible = value;
     }
 
+    public bool IsInvisible => _invisible;
+
     [SerializeField]
     private Material _character;
     
@@ -211,16 +249,20 @@ public class BanditController : MonoBehaviour
     [SerializeField]
     private Color _visibleColor;
 
+    [SerializeField] private AudioClip _invisibityClip;
+    
     private IEnumerator ActivateInvisibility()
     {
         _invisible = true;
         _character.color = _invisibleColor;
+        AudioSource.PlayClipAtPoint(_invisibityClip, transform.position);    
         float time = 0f;
         while (_invisible && time < InvisibilityDuration)
         {
             time += Time.deltaTime;
             yield return null;
         }
+        AudioSource.PlayClipAtPoint(_invisibityClip, transform.position);
         Instantiate(defensiveAbilityEffect, transform.position, Quaternion.Euler(90f, 0, 0));
         InvisibleChange = true;
         _invisible = false;
@@ -228,12 +270,11 @@ public class BanditController : MonoBehaviour
     }
     #endregion
 
-    // Shoot one pellet using revolver that resets all character cooldowns
-
     #region Ultimate
-    
+
+    [SerializeField] private AudioClip _revolverSound;
     public readonly string RevolverBulletTag = "RevolverBullet";
-    private bool _reset = false;
+    public bool reset = false;
     private const float UltimateCooldown = 4f;
     private float _lastUltimate = -UltimateCooldown;
     [SerializeField] private Text _ultimateCooldownText; 
@@ -242,9 +283,11 @@ public class BanditController : MonoBehaviour
         _invisible = false;
         if (Time.time - _lastUltimate >= UltimateCooldown)
         {
+            AudioSource.PlayClipAtPoint(_revolverSound, transform.position);
             _lastUltimate = Time.time;
-            StartCoroutine(AimRevolver());
-            StartCoroutine(CooldownTimer(_ultimateCooldownText, UltimateCooldown));
+            StartCoroutine(AimAndShootRevolver());
+            cooldownCoroutines[2] = CooldownTimer(_ultimateCooldownText, UltimateCooldown); 
+            StartCoroutine(cooldownCoroutines[2]);
         }
     }
 
@@ -252,12 +295,14 @@ public class BanditController : MonoBehaviour
     private Transform _revolver;
     [SerializeField]
     private Transform _initialRevolverTransform;
-    private const float RevolverAnimationTime = 0.35f;
+    private const float RevolverAnimationTime = 0.1f;
     private const float RestingRevolverAngle = 0f;
     private const float AimingRevolverAngle = -90f;
     [SerializeField]
     private TrailRenderer _revolverBulletTrail;
-    private IEnumerator AimRevolver()
+    
+    // Shoot one pellet using revolver that resets all character cooldowns
+    private IEnumerator AimAndShootRevolver()
     {
         yield return TurnRevolver(RestingRevolverAngle, AimingRevolverAngle);
         
@@ -266,7 +311,7 @@ public class BanditController : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance, _hitMask))
             hitPoint = hit.point;
         else
-            hitPoint = ray.direction * _maxDistance;
+            hitPoint = _initialRevolverTransform.position + ray.direction * _maxDistance;
         TrailRenderer trail = Instantiate(
             _revolverBulletTrail,
             _initialRevolverTransform.position,
@@ -277,7 +322,7 @@ public class BanditController : MonoBehaviour
         yield return TurnRevolver(AimingRevolverAngle, RestingRevolverAngle);
     }
 
-    private IEnumerator TurnRevolver(float start, float end)
+    private IEnumerator TurnRevolver(float startRotation, float endRotation)
     {
         float time = 0f;
         Vector3 revolverRotation;
@@ -285,13 +330,13 @@ public class BanditController : MonoBehaviour
         {
             time += Time.deltaTime;
             revolverRotation = _revolver.localRotation.eulerAngles;
-            revolverRotation.x = Mathf.LerpAngle(start, end, time / RevolverAnimationTime);
+            revolverRotation.x = Mathf.LerpAngle(startRotation, endRotation, time / RevolverAnimationTime);
             _revolver.localRotation = Quaternion.Euler(revolverRotation);
             yield return null;
         }
 
         revolverRotation = _revolver.rotation.eulerAngles;
-        revolverRotation.x = Mathf.LerpAngle(start, end, 1);
+        revolverRotation.x = Mathf.LerpAngle(startRotation, endRotation, 1);
         _revolver.rotation = Quaternion.Euler(revolverRotation);
     }
 
@@ -300,11 +345,41 @@ public class BanditController : MonoBehaviour
         return Damage() * 6f;
     }
     #endregion
-    
+
+    private IEnumerator[] cooldownCoroutines = new IEnumerator[3];
+    public void Reset()
+    {
+        // Stop cooldown coroutines
+        for (int i = 0; i < cooldownCoroutines.Length; i++)
+        {
+            if (cooldownCoroutines[i] != null)
+                StopCoroutine(cooldownCoroutines[i]);
+        }
+        
+        // Reset cooldown's
+        _lastSlash = Time.time - SlashCooldown;
+        _slashCooldownLabel.text = "";
+        
+        _lastInvisibility = Time.time - InvisibilityCooldown;
+        _invisibleCooldownText.text = "";
+
+        _lastUltimate = Time.time - UltimateCooldown;
+        _ultimateCooldownText.text = "";
+        
+        // Reload shotgun
+        if (_remainingBullets < MagazineSize)
+        {
+            StopCoroutine(nameof(Reload));
+            _remainingBullets = 4;
+            for (int i = 0; i < MagazineSize; i++)
+                _ammoImages[i].enabled = true;
+            _ammoCount.text = MagazineSize.ToString();
+        }
+    }
     private IEnumerator CooldownTimer(Text text, float cooldown)
     {
         float time = cooldown;
-        while (!_reset && time > 0)
+        while (time > 0)
         {
             time -= Time.deltaTime;
             text.text = time.ToString("0.0");
@@ -313,6 +388,36 @@ public class BanditController : MonoBehaviour
 
         text.text = "";
     }
-    
-    
+
+    private void Death()
+    {
+        SceneManager.LoadScene("RiskOfRain2");
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        Collider collisionCollider = collision.collider;
+        if (collisionCollider.CompareTag("FireBall"))
+        {
+            _health -= collisionCollider.GetComponent<FireBall>().damage;
+            if (_health < 0)
+            {
+                Death();
+            }
+            Destroy(collisionCollider.gameObject);
+        }
+    }
+
+    private void OnControllerColliderHit(ControllerColliderHit collision)
+    {
+        
+        if (collision.collider.CompareTag("FallDepth"))
+            Death();
+    }
+
+    public void AddHeath(float healthUpgrade)
+    {
+        _health += healthUpgrade;
+        _maxHealth += healthUpgrade;
+    }
 }

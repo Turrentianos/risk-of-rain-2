@@ -1,4 +1,5 @@
 using System.Collections;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -45,7 +46,7 @@ public class CharacterControl : MonoBehaviour
     private BanditController _banditController;
 
     private Camera _camera;
-    private void Start()
+    private void Awake()
     {
         _camera = Camera.main;
         _charCtrl = GetComponent<CharacterController>();
@@ -88,8 +89,21 @@ public class CharacterControl : MonoBehaviour
         ApplyJump();
         MouseMovement();
         CallAbilities();
+        PlayWalkingSound();
         _charCtrl.Move(_velocity * Time.deltaTime);
         CheckForContainers();
+    }
+
+    [SerializeField] private AudioClip walkingSound;
+    private float _lastWalkingSound;
+    private void PlayWalkingSound()
+    {
+        float frequentie = _sprint ? 0.45f : 0.6f;
+        if (_charCtrl.isGrounded && Time.time - _lastWalkingSound >= frequentie && !Mathf.Approximately(_inputVector.magnitude, 0))
+        {
+            _lastWalkingSound = Time.time;
+            AudioSource.PlayClipAtPoint(walkingSound, transform.position);
+        }
     }
 
     private void CallAbilities()

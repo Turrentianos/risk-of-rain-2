@@ -34,7 +34,7 @@ public class ThirdPersonCamera : MonoBehaviour
         get => -_camera.transform.localPosition.z;
     }
     
-    void Start()
+    void Awake()
     {
         _camera = GetComponentInChildren<Camera>();
         Cursor.lockState = CursorLockMode.Locked;
@@ -60,18 +60,6 @@ public class ThirdPersonCamera : MonoBehaviour
         if (Physics.Raycast(focusPoint, -lookDirection, out RaycastHit hitInfo, Distance, LayerMask.GetMask("Ground")))
             cameraLocalPosition.z = -hitInfo.distance;
         _camera.transform.localPosition = cameraLocalPosition;
-    }
-
-    private void OnDrawGizmos()
-    {
-        Vector3 focusPoint = transform.position;
-        Vector3 lookDirection = (focusPoint - _camera.transform.position).normalized;
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(focusPoint, focusPoint+lookDirection);
-        
-        Quaternion lookRotation = _camera.transform.rotation;
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine(focusPoint, focusPoint+lookRotation * Vector3.forward);
     }
 
     private void ClearNearPlane()
