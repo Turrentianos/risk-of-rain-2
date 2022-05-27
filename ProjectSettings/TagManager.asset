@@ -9,8 +9,8 @@ TagManager:
   - FireBall
   - Slash
   - FallDepth
-  - Undefined
   - ItemOrb
+  - Enemy
   layers:
   - Default
   - TransparentFX

@@ -1,5 +1,4 @@
 using System.Collections;
-using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -14,7 +13,6 @@ public class CharacterControl : MonoBehaviour
     private float _lastAction;
     private bool _outOfCombat = true;
     private const float Acceleration = 5f;
-    private const float RotationSpeed = 180f;
 
     private readonly Vector3 _inCombatAccelerations = new Vector3(3f, 1f, 5f);
     // private const float ForwardAcceleration = 5f;
@@ -41,7 +39,6 @@ public class CharacterControl : MonoBehaviour
     private bool _mouse2 = false;
     private bool _defensiveAbility = false;
     private bool _ultimate = false;
-    private Vector3 _lookDirection;
     [SerializeField]
     private BanditController _banditController;
 
@@ -98,8 +95,8 @@ public class CharacterControl : MonoBehaviour
     private float _lastWalkingSound;
     private void PlayWalkingSound()
     {
-        float frequentie = _sprint ? 0.45f : 0.6f;
-        if (_charCtrl.isGrounded && Time.time - _lastWalkingSound >= frequentie && !Mathf.Approximately(_inputVector.magnitude, 0))
+        float frequency = _sprint ? 0.45f : 0.6f;
+        if (_charCtrl.isGrounded && Time.time - _lastWalkingSound >= frequency && !Mathf.Approximately(_inputVector.magnitude, 0))
         {
             _lastWalkingSound = Time.time;
             AudioSource.PlayClipAtPoint(walkingSound, transform.position);
@@ -139,11 +136,10 @@ public class CharacterControl : MonoBehaviour
         if (colliders.Length != 0 && _openRequest)
         {
             float minDistance = Mathf.Infinity;
-            float distance;
             int closest = -1;
             for (int i = 0; i < colliders.Length; i++)
             {
-                distance = Vector3.Distance(colliders[i].transform.position, transform.position);
+                var distance = Vector3.Distance(colliders[i].transform.position, transform.position);
                 if (distance < minDistance)
                 {
                     minDistance = distance;

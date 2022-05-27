@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class Chest : MonoBehaviour
@@ -14,7 +13,7 @@ public class Chest : MonoBehaviour
     private const float ClosedAngle = 0f;
     private const float OpenAngle = 55f;
     private LayerMask _mask;
-    private float _timer = 0f;
+    private float _timer;
     private float _time = 0.5f;
 
     private void Start()

@@ -1,6 +1,4 @@
-using System;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class FireBall : MonoBehaviour
 {
@@ -43,7 +41,7 @@ public class FireBall : MonoBehaviour
 
     }
 
-    private void OnCollisionEnter(Collision collision)
+    private void OnCollisionEnter()
     {
         AudioSource.PlayClipAtPoint(_fireballExplosion, transform.position);
     }

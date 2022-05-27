@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _player: {fileID: 0}
   _groundEnemy: {fileID: 8038540170407624548, guid: 60eb1648b59e0c186a5767dbee96b50d, type: 3}
-  _lesserWisp: {fileID: 7561619904150757289, guid: 49f34a9099c0c510db8650c97e040b05, type: 3}
+  _enemyParent: {fileID: 0}
 --- !u!111 &296523534977480901
 Animation:
   m_ObjectHideFlags: 0

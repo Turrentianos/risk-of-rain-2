@@ -8,7 +8,7 @@ public class EnemySpawner : MonoBehaviour
 {
     [SerializeField] private Transform _player;
     [SerializeField] private GameObject _groundEnemy;
-    [SerializeField] private GameObject _lesserWisp;
+    // [SerializeField] private GameObject _lesserWisp;
     [SerializeField] private Transform _enemyParent;
     private const float SpawnTimer = 5f;
     private const float SpawnProbability = 0.7f;

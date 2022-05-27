@@ -1,6 +1,4 @@
-using System;
 using System.Collections;
-using System.Numerics;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
@@ -72,14 +70,32 @@ public class BanditController : MonoBehaviour
         {
             _invisible = false;
             AudioSource.PlayClipAtPoint(_shotgunSound, transform.position);
-            Ray[] bulletRays = GetShotgunRays();
+            
+            Ray rayFromCamera = _camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, _camera.nearClipPlane));
+
+            Vector3 hitPoint;
+            
+            if (Physics.Raycast(rayFromCamera, out RaycastHit hit, _maxDistance, _hitMask))
+            {
+                hitPoint = hit.point;
+            }
+            else
+                hitPoint = transform.position + rayFromCamera.direction * _maxDistance;
+
+            Vector3 initialBulletPosition = _initialBulletTransform.position;
+            Vector3 directionToHit = (hitPoint - initialBulletPosition).normalized;
+            
+            Ray[] bulletRays = GetShotgunRays(directionToHit, initialBulletPosition);
             for (int i = 0; i < bulletRays.Length; i++)
             {
                 // Find collision from cameras point of view
-                Ray rayFromCamera = bulletRays[i];
-                Vector3 hitPoint;
-                if (Physics.Raycast(rayFromCamera, out RaycastHit hit, _maxDistance, _hitMask))
+                rayFromCamera = bulletRays[i];
+                if (Physics.Raycast(rayFromCamera, out hit, _maxDistance, _hitMask))
+                {
                     hitPoint = hit.point;
+                    if (hit.collider.CompareTag("Enemy"))
+                        hit.collider.GetComponent<Enemy>().Damage(ShotgunBulletTag);
+                }
                 else
                     hitPoint = transform.position + rayFromCamera.direction * _maxDistance;
 
@@ -149,17 +165,17 @@ public class BanditController : MonoBehaviour
     }
 
     // Should return 5 directions, one for each bullet shot but the shotgun 
-    private Ray[] GetShotgunRays()
+    private Ray[] GetShotgunRays(Vector3 initialDirection, Vector3 origin)
     {
         float[] _bulletSpread = {-1f, -0.5f, 0.5f, 1f}; 
-        Ray middleBulletRay = _camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, _camera.nearClipPlane));
+        Ray middleBulletRay = new Ray(origin, initialDirection);
         Ray[] bulletRays = new Ray[5];
         bulletRays[4] = middleBulletRay;
         for (int i = 0; i < _bulletSpread.Length; i++)
         {
             bulletRays[i] = new Ray(
                     middleBulletRay.origin,
-                    Quaternion.AngleAxis(_bulletSpread[i], _camera.transform.up) * middleBulletRay.direction
+                    Quaternion.AngleAxis(_bulletSpread[i], _initialBulletTransform.up) * middleBulletRay.direction
                 );
         }
         return bulletRays;
@@ -187,8 +203,8 @@ public class BanditController : MonoBehaviour
             _invisible = false;
             _lastSlash = Time.time;
             _sweepAnimator.SetTrigger(Sweep);
-            cooldownCoroutines[0] = CooldownTimer(_slashCooldownLabel, SlashCooldown);
-            StartCoroutine(cooldownCoroutines[0]);
+            _cooldownCoroutines[0] = CooldownTimer(_slashCooldownLabel, SlashCooldown);
+            StartCoroutine(_cooldownCoroutines[0]);
         }
         
     }
@@ -201,10 +217,7 @@ public class BanditController : MonoBehaviour
 
     #region Inivisibility
     private Vector3 _invisibilityBump;
-    public Vector3 InvisibilityBump
-    {
-        get => _invisibilityBump;
-    }
+    public Vector3 InvisibilityBump => _invisibilityBump;
     private const float KnockUpHeight = 2f;
 
     [SerializeField]
@@ -226,8 +239,8 @@ public class BanditController : MonoBehaviour
             Instantiate(defensiveAbilityEffect, transform.position, Quaternion.Euler(90f, 0, 0));
         
             StartCoroutine(ActivateInvisibility());
-            cooldownCoroutines[1] = CooldownTimer(_invisibleCooldownText, InvisibilityCooldown);
-            StartCoroutine(cooldownCoroutines[1]);
+            _cooldownCoroutines[1] = CooldownTimer(_invisibleCooldownText, InvisibilityCooldown);
+            StartCoroutine(_cooldownCoroutines[1]);
         }
     }
 
@@ -255,15 +268,17 @@ public class BanditController : MonoBehaviour
     {
         _invisible = true;
         _character.color = _invisibleColor;
-        AudioSource.PlayClipAtPoint(_invisibityClip, transform.position);    
+        Vector3 position = transform.position;
+        AudioSource.PlayClipAtPoint(_invisibityClip, position);    
         float time = 0f;
         while (_invisible && time < InvisibilityDuration)
         {
             time += Time.deltaTime;
             yield return null;
         }
-        AudioSource.PlayClipAtPoint(_invisibityClip, transform.position);
-        Instantiate(defensiveAbilityEffect, transform.position, Quaternion.Euler(90f, 0, 0));
+
+        AudioSource.PlayClipAtPoint(_invisibityClip, position);
+        Instantiate(defensiveAbilityEffect, position, Quaternion.Euler(90f, 0, 0));
         InvisibleChange = true;
         _invisible = false;
         _character.color = _visibleColor;
@@ -274,7 +289,6 @@ public class BanditController : MonoBehaviour
 
     [SerializeField] private AudioClip _revolverSound;
     public readonly string RevolverBulletTag = "RevolverBullet";
-    public bool reset = false;
     private const float UltimateCooldown = 4f;
     private float _lastUltimate = -UltimateCooldown;
     [SerializeField] private Text _ultimateCooldownText; 
@@ -286,8 +300,8 @@ public class BanditController : MonoBehaviour
             AudioSource.PlayClipAtPoint(_revolverSound, transform.position);
             _lastUltimate = Time.time;
             StartCoroutine(AimAndShootRevolver());
-            cooldownCoroutines[2] = CooldownTimer(_ultimateCooldownText, UltimateCooldown); 
-            StartCoroutine(cooldownCoroutines[2]);
+            _cooldownCoroutines[2] = CooldownTimer(_ultimateCooldownText, UltimateCooldown); 
+            StartCoroutine(_cooldownCoroutines[2]);
         }
     }
 
@@ -305,13 +319,23 @@ public class BanditController : MonoBehaviour
     private IEnumerator AimAndShootRevolver()
     {
         yield return TurnRevolver(RestingRevolverAngle, AimingRevolverAngle);
-        
+
         Ray ray = _camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, _camera.nearClipPlane));
         Vector3 hitPoint;
         if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance, _hitMask))
+        {
             hitPoint = hit.point;
+        }
         else
             hitPoint = _initialRevolverTransform.position + ray.direction * _maxDistance;
+
+        Vector3 direction = (hitPoint - _initialRevolverTransform.position).normalized;
+        if (Physics.Raycast(_initialRevolverTransform.position, direction, out hit, _maxDistance, _hitMask))
+        {
+            hitPoint = hit.point;
+            if (hit.collider.CompareTag("Enemy"))
+                hit.collider.GetComponent<Enemy>().Damage(RevolverBulletTag);
+        }
         TrailRenderer trail = Instantiate(
             _revolverBulletTrail,
             _initialRevolverTransform.position,
@@ -346,14 +370,14 @@ public class BanditController : MonoBehaviour
     }
     #endregion
 
-    private IEnumerator[] cooldownCoroutines = new IEnumerator[3];
+    private readonly IEnumerator[] _cooldownCoroutines = new IEnumerator[3];
     public void Reset()
     {
         // Stop cooldown coroutines
-        for (int i = 0; i < cooldownCoroutines.Length; i++)
+        for (int i = 0; i < _cooldownCoroutines.Length; i++)
         {
-            if (cooldownCoroutines[i] != null)
-                StopCoroutine(cooldownCoroutines[i]);
+            if (_cooldownCoroutines[i] != null)
+                StopCoroutine(_cooldownCoroutines[i]);
         }
         
         // Reset cooldown's

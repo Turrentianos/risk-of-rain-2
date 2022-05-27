@@ -1,5 +1,3 @@
-using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
@@ -36,7 +34,7 @@ public class Enemy : MonoBehaviour
         GameObject playerGameObject = GameObject.FindWithTag("Player");
         _player = playerGameObject.transform;
         _bandit = playerGameObject.GetComponent<BanditController>();
-        _camera = Camera.main.transform;
+        _camera = GameObject.FindWithTag("MainCamera").transform;
     }
 
     public bool active = true;
@@ -85,8 +83,9 @@ public class Enemy : MonoBehaviour
     [SerializeField] private AudioClip _fireBallShootingSound;
     private void AttackPlayer()
     {
-        AudioSource.PlayClipAtPoint(_fireBallShootingSound, _fireBallStart.position); 
-        GameObject createdFireBall = Instantiate(_fireBall, _fireBallStart.position, _fireBallStart.rotation);
+        Vector3 fireBallPosition = _fireBallStart.position;
+        AudioSource.PlayClipAtPoint(_fireBallShootingSound, fireBallPosition); 
+        GameObject createdFireBall = Instantiate(_fireBall, fireBallPosition, _fireBallStart.rotation);
         FireBall fireBallScript = createdFireBall.GetComponentInChildren<FireBall>();
         fireBallScript.damage = _damage;
         _lastAttack = Time.time;
@@ -98,7 +97,6 @@ public class Enemy : MonoBehaviour
     }
 
     private const float WalkDistance = 15;
-    private bool _destinationFound;
     private void RandomWalk()
     {
         if (_agent.remainingDistance < _agent.stoppingDistance) {
@@ -133,17 +131,15 @@ public class Enemy : MonoBehaviour
         return false;
     }
 
-    private void OnCollisionEnter(Collision collision)
+    public void Damage(string damageType)
     {
-        _health -= GetDamage(collision.collider);
+        _health -= GetDamage(damageType);
         if (_health < MaxHealth)
         {
             _healthBarCanvas.gameObject.SetActive(true);
             _healthBar.value = _health / MaxHealth;
         }
-        
-        
-        
+
         if (_health <= 0)
         {
             Death();
@@ -156,21 +152,19 @@ public class Enemy : MonoBehaviour
         Destroy(gameObject);
     }
 
-    private float GetDamage(Collider damageCollider)
+    private float GetDamage(string damageType)
     {
-        if (damageCollider.CompareTag(_bandit.ShotgunBulletTag))
+        if (damageType == _bandit.ShotgunBulletTag)
         {
-            Destroy(damageCollider.gameObject, 0.1f);
             return _bandit.ShotgunDamage();
         } 
-        if (damageCollider.CompareTag(_bandit.RevolverBulletTag))
+        if (damageType == _bandit.RevolverBulletTag)
         {
-            Destroy(damageCollider.gameObject, 0.1f);
             float damage = _bandit.RevolverDamage();
             if (_health - damage <= 0) _bandit.Reset();
             return damage;
         }
-        if (damageCollider.CompareTag(_bandit.SlashTag))
+        if (damageType ==  _bandit.SlashTag)
         {
             return _bandit.SlashDamage();
         }

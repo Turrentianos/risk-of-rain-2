@@ -5069,7 +5069,6 @@ MonoBehaviour:
   _visibleColor: {r: 1, g: 1, b: 1, a: 1}
   _invisibityClip: {fileID: 0}
   _revolverSound: {fileID: 8300000, guid: d8f765c522fac62b9b80322753fd00d6, type: 3}
-  reset: 0
   _ultimateCooldownText: {fileID: 0}
   _revolver: {fileID: 5648515158340951044}
   _initialRevolverTransform: {fileID: 4733768983982554791}
@@ -5484,6 +5483,7 @@ GameObject:
   - component: {fileID: 9018351797069436065}
   - component: {fileID: 1553143743955187331}
   - component: {fileID: 3158379613910599607}
+  - component: {fileID: 3806953136512068215}
   m_Layer: 13
   m_Name: SwordHandle
   m_TagString: Slash
@@ -5554,6 +5554,18 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &3806953136512068215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6644227745026185904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09ec7467c412f52168b0f8b3c8a62648, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6996027972870864512
 GameObject:
   m_ObjectHideFlags: 0
